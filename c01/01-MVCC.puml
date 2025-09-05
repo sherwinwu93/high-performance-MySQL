@@ -1,0 +1,14 @@
+@startuml
+participant  事务A as p1
+participant  行 as p2
+participant  InnoDB引擎 as p3
+participant  Undo日志 as p4
+participant  Redo日志 as p5
+participant  事务B as p6
+p1 --> p2 : A写入
+p1 --> p4: 带有txnID A的Undo日志
+p4 --> p1: 回滚指针
+p1 --> p5: Redo日志记录
+p6 --> p3: 读取行
+p3 --> p6: 应用Undo记录直到正确的txn ID
+@enduml
