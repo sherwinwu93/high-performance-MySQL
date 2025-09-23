@@ -177,18 +177,19 @@ order by inventory_id, customer_id;
 explain select * from rental
         where rental_date = '2005-05-25'
         order by inventory_id desc;
-### 走索引,最左原则, 期望走索引,但是没走
+### 走索引,最左原则, 期望走索引,但是没走. 需要设置force index for order by
 explain select * from rental
         where rental_date > '2005-05-25'
-        order by rental_date, inventory_id;
-### 不走索引,联合字段排序顺序不对
+       order by rental_date, inventory_id;
+### 不走索引,联合字段排序顺序不对. 但实际走索引了,可能跟mysql版本有关
 explain select * from rental
         where rental_date = '2005-05-25'
         order by inventory_id desc, customer_id asc;
+### 不走索引,有非索引字段. 实际走索引了,跟版本有关.
 explain select * from rental
         where rental_date = '2005-05-25'
         order by inventory_id, staff_id;
-### 没这个字段不走索引
+### 没这个字段不走索引, 外键索引???
 explain select * from rental
 where rental_date = '2005-05-25'
 order by customer_id;
