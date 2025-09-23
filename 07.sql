@@ -159,4 +159,48 @@ from inventory;
 ### 只查索引不查行,有主键
 explain select actor_id, last_name
 from actor
-where last_name = 'HOPPER';
+# where last_name = 'HOPPER'
+order by last_name, first_name;
+
+explain select state_id, city, address
+from userinfo
+order by state_id, city;
+
+### 排序用索引情况
+# constraint rental_date
+#         unique (rental_date, inventory_id, customer_id),
+# 走索引,因为最左边列是常量,顺序也相同
+explain select * from rental
+where rental_date = '2005-05-25'
+order by inventory_id, customer_id;
+### 也走索引,最左边是常量
+explain select * from rental
+        where rental_date = '2005-05-25'
+        order by inventory_id desc;
+### 走索引,最左原则, 期望走索引,但是没走
+explain select * from rental
+        where rental_date > '2005-05-25'
+        order by rental_date, inventory_id;
+### 不走索引,联合字段排序顺序不对
+explain select * from rental
+        where rental_date = '2005-05-25'
+        order by inventory_id desc, customer_id asc;
+explain select * from rental
+        where rental_date = '2005-05-25'
+        order by inventory_id, staff_id;
+### 没这个字段不走索引
+explain select * from rental
+where rental_date = '2005-05-25'
+order by customer_id;
+## range不走索引
+explain select * from rental
+where rental_date > '2005-05-25'
+order by inventory_id, customer_id;
+### range不走索引
+explain select * from rental
+where rental_date = '2005-05-25'
+and inventory_id in (1, 2)
+order by customer_id;
+## 理论排序要走索引,实际没有走索引.因为film_actor.actor_id作为第二张表
+explain select actor_id, title from film_actor
+inner join film using(film_id) order by actor_id;
