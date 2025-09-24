@@ -157,12 +157,14 @@ explain
 select store_id, film_id
 from inventory;
 ### 只查索引不查行,有主键
-explain select actor_id, last_name
+explain
+select actor_id, last_name
 from actor
 # where last_name = 'HOPPER'
 order by last_name, first_name;
 
-explain select state_id, city, address
+explain
+select state_id, city, address
 from userinfo
 order by state_id, city;
 
@@ -170,38 +172,107 @@ order by state_id, city;
 # constraint rental_date
 #         unique (rental_date, inventory_id, customer_id),
 # 走索引,因为最左边列是常量,顺序也相同
-explain select * from rental
+explain
+select *
+from rental
 where rental_date = '2005-05-25'
 order by inventory_id, customer_id;
 ### 也走索引,最左边是常量
-explain select * from rental
-        where rental_date = '2005-05-25'
-        order by inventory_id desc;
+explain
+select *
+from rental
+where rental_date = '2005-05-25'
+order by inventory_id desc;
 ### 走索引,最左原则, 期望走索引,但是没走. 需要设置force index for order by
-explain select * from rental
-        where rental_date > '2005-05-25'
-       order by rental_date, inventory_id;
+explain
+select *
+from rental
+where rental_date > '2005-05-25'
+order by rental_date, inventory_id;
 ### 不走索引,联合字段排序顺序不对. 但实际走索引了,可能跟mysql版本有关
-explain select * from rental
-        where rental_date = '2005-05-25'
-        order by inventory_id desc, customer_id asc;
+explain
+select *
+from rental
+where rental_date = '2005-05-25'
+order by inventory_id desc, customer_id asc;
 ### 不走索引,有非索引字段. 实际走索引了,跟版本有关.
-explain select * from rental
-        where rental_date = '2005-05-25'
-        order by inventory_id, staff_id;
+explain
+select *
+from rental
+where rental_date = '2005-05-25'
+order by inventory_id, staff_id;
 ### 没这个字段不走索引, 外键索引???
-explain select * from rental
+explain
+select *
+from rental
 where rental_date = '2005-05-25'
 order by customer_id;
 ## range不走索引
-explain select * from rental
+explain
+select *
+from rental
 where rental_date > '2005-05-25'
 order by inventory_id, customer_id;
 ### range不走索引
-explain select * from rental
+explain
+select *
+from rental
 where rental_date = '2005-05-25'
-and inventory_id in (1, 2)
+  and inventory_id in (1, 2)
 order by customer_id;
 ## 理论排序要走索引,实际没有走索引.因为film_actor.actor_id作为第二张表
-explain select actor_id, title from film_actor
-inner join film using(film_id) order by actor_id;
+explain
+select actor_id, title
+from film_actor
+         inner join film using (film_id)
+order by actor_id;
+## 建立重复索引
+create table test
+(
+    id int not null primary key,
+    A  int not null,
+    B  int not null,
+    unique (id),
+    index (id)
+);
+
+## 示例----------------
+### 假如有表,100万行
+CREATE TABLE userinfo
+(
+    id              int unsigned      NOT NULL AUTO_INCREMENT,
+    name            varchar(64)       NOT NULL DEFAULT '',
+    email           varchar(64)       NOT NULL DEFAULT '',
+    password        varchar(64)       NOT NULL DEFAULT '',
+    dob             date                       DEFAULT NULL,
+    address         varchar(255)      NOT NULL DEFAULT '',
+    city            varchar(64)       NOT NULL DEFAULT '',
+    state_id        tinyint unsigned  NOT NULL DEFAULT '0',
+    zip             varchar(8)        NOT NULL DEFAULT '',
+    country_id      smallint unsigned NOT NULL DEFAULT '0',
+    account_type    varchar(32)       NOT NULL DEFAULT '',
+    verified        tinyint           NOT NULL DEFAULT '0',
+    allow_mail      tinyint unsigned  NOT NULL DEFAULT '0',
+    parrent_account int unsigned      NOT NULL DEFAULT '0',
+    closest_airport varchar(3)        NOT NULL DEFAULT '',
+    PRIMARY KEY (id),
+    UNIQUE KEY email (email),
+    KEY country_id (country_id),
+    KEY state_id (state_id)
+);
+## Q1:(state_id)对这个查询有用, QPS 115
+select count(*) from userinfo where state_id = 5;
+## Q2:QPS只有10
+select state_id, city, address from userinfo where state_id = 5;
+## 优化 drop (state_id) add (state_id, city, address), Q2更快,Q1更慢.
+## 如果想Q1,Q2都快,(state_id) (state_id, city, address)都保留,缺点就是维护成本(插入时变慢)
+## 查找无用索引
+select * from sys.schema_unused_indexes;
+check table userinfo;
+## 重新统计表(索引部分)
+analyze table userinfo;
+## cardinality of indexes,多少个不同的值在索引
+show index from actor;
+select * from information_schema.STATISTICS
+where TABLE_NAME = 'actor';
+show table status;
