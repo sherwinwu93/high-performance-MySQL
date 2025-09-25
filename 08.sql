@@ -69,11 +69,33 @@ from sakila.film
          left outer join sakila.film_actor using (film_id)
 where film_actor.film_id is null;
 # 等于的传播
-select film.film_id from film
-inner join film_actor using (film_id)
+select film.film_id
+from film
+         inner join film_actor using (film_id)
 where film.film_id > 500;
 # 与上者等价
-select film.film_id from film
-                             inner join film_actor using (film_id)
-where film.film_id > 500 and film_actor.film_id > 500;
+select film.film_id
+from film
+         inner join film_actor using (film_id)
+where film.film_id > 500
+  and film_actor.film_id > 500;
+# 所有join顺序都等价
+explain select film.film_id,
+       film.title,
+       film.release_year,
+       actor.actor_id,
+       actor.first_name,
+       actor.last_name
+from film
+         inner join film_actor using (film_id)
+         inner join actor using (actor_id);
+explain select straight_join film.film_id,
+               film.title,
+               film.release_year,
+               actor.actor_id,
+               actor.first_name,
+               actor.last_name
+        from film
+                 inner join film_actor using (film_id)
+                 inner join actor using (actor_id);
 
