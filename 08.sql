@@ -49,3 +49,31 @@ group by actor_id;
 # select * from tag where tag = 'mysql';
 # select * from tag_post where  tag_id=1234;
 # select * from post where post.id in (123,456,567,9098,8904);
+# 显示进程的状态, Command列显示状态
+show full processlist;
+show status like 'Last_query_cost';
+# 减少常量表达式
+explain
+select film.film_id, film_actor.actor_id
+from sakila.film
+         inner join sakila.film_actor using (film_id)
+where film.film_id = 1;
+# 提前终止1
+explain
+select film.film_id
+from sakila.film
+where film_id = -1;
+# 提前终止2,一旦知道有演员就不会继续再查
+select film.film_id
+from sakila.film
+         left outer join sakila.film_actor using (film_id)
+where film_actor.film_id is null;
+# 等于的传播
+select film.film_id from film
+inner join film_actor using (film_id)
+where film.film_id > 500;
+# 与上者等价
+select film.film_id from film
+                             inner join film_actor using (film_id)
+where film.film_id > 500 and film_actor.film_id > 500;
+
