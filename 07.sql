@@ -160,6 +160,10 @@ from inventory;
 explain
 select actor_id, last_name
 from actor
+where last_name = 'HOPPER';
+explain
+select actor_id, last_name
+from actor
 # where last_name = 'HOPPER'
 order by last_name, first_name;
 
@@ -171,51 +175,51 @@ order by state_id, city;
 ### 排序用索引情况
 # constraint rental_date
 #         unique (rental_date, inventory_id, customer_id),
-# 走索引,因为最左边列是常量,顺序也相同
+# 排序走索引,因为最左边列是常量,顺序也相同
 explain
-select *
+select rental_id, staff_id
 from rental
 where rental_date = '2005-05-25'
 order by inventory_id, customer_id;
-### 也走索引,最左边是常量
+### 排序走索引,最左边是常量
 explain
-select *
+select rental_id, staff_id
 from rental
 where rental_date = '2005-05-25'
 order by inventory_id desc;
-### 走索引,最左原则, 期望走索引,但是没走. 需要设置force index for order by
+### 排序走索引,最左原则, 期望走索引,但是没走. 需要设置force index for order by
 explain
-select *
-from rental
+select rental_id, staff_id
+from rental force index for order by(rental_date)
 where rental_date > '2005-05-25'
 order by rental_date, inventory_id;
-### 不走索引,联合字段排序顺序不对. 但实际走索引了,可能跟mysql版本有关
+### 排序不走索引,联合字段排序顺序不对.
 explain
-select *
+select rental_id, staff_id
 from rental
 where rental_date = '2005-05-25'
 order by inventory_id desc, customer_id asc;
-### 不走索引,有非索引字段. 实际走索引了,跟版本有关.
+### 排序不走索引,有非索引字段.
 explain
-select *
+select rental_id, staff_id
 from rental
 where rental_date = '2005-05-25'
 order by inventory_id, staff_id;
-### 没这个字段不走索引, 外键索引???
+### 没这个字段不走索引, 排序不走索引
 explain
-select *
+select rental_id, staff_id
 from rental
 where rental_date = '2005-05-25'
 order by customer_id;
-## range不走索引
+## range不走索引,因为第一个字段是range,所以剩余的部分不用索引
 explain
-select *
+select rental_id, staff_id
 from rental
 where rental_date > '2005-05-25'
 order by inventory_id, customer_id;
-### range不走索引
+### in走索引,排序不走索引
 explain
-select *
+select rental_id, staff_id
 from rental
 where rental_date = '2005-05-25'
   and inventory_id in (1, 2)
