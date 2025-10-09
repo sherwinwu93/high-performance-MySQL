@@ -6,6 +6,7 @@ where film.title = 'Academy Dinosaur';
 
 ## 有索引只需examine 10行,type:ref
 ## type: ref, key: idx_fk_film_id, rows: 10(examine10行)
+create index idx_fk_film_id on film_actor(film_id);
 explain
 select *
 from film_actor
@@ -13,7 +14,7 @@ where film_id = 1;
 
 ## 把索引去掉,再试 需要examine 5462行,type: ALL; Extra: Using where;
 # ALTER TABLE film_actor DROP FOREIGN KEY fk_film_actor_film;
-# ALTER TABLE sakila.film_actor DROP KEY idx_fk_film_id;
+ALTER TABLE sakila.film_actor DROP KEY idx_fk_film_id;
 EXPLAIN
 SELECT *
 FROM sakila.film_actor
